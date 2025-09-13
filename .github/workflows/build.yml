@@ -1,0 +1,32 @@
+name: 🔧 Build Hollowing Tool (Windows)
+
+on:
+  push:
+    paths:
+      - 'demo.c'
+      - '.github/workflows/build.yml'
+  pull_request:
+    paths:
+      - 'demo.c'
+
+jobs:
+  build:
+    name: 🏗️ Build on Windows with MSVC
+    runs-on: windows-latest
+
+    steps:
+      - name: 🧾 Checkout repo
+        uses: actions/checkout@v3
+
+      - name: ⚙️ Setup MSVC Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: 🛠️ Compile demo.c
+        run: |
+          cl demo.c /nologo /W4 /EHsc /link kernel32.lib user32.lib ntdll.lib
+
+      - name: 📦 Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo.exe
+          path: ./demo.exe
