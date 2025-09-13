@@ -4,7 +4,7 @@
 
 ## Sobre
 
-**Process Hollowing** é uma técnica de injeção de código onde um processo legítimo (ex: `notepad.exe`) é criado suspenso, tem sua imagem de memória desalocada, e é preenchido com o código de outro executável (o *payload*). Ao retomar a execução, o processo aparenta ser legítimo, mas está executando um binário totalmente diferente — útil para simulações de malware e evasão.
+**Process Hollowing** é uma técnica de injeção de código onde um processo legítimo (ex: `notepad.exe`) é criado suspenso, tem sua imagem de memória desalocada, e é preenchido com o código de outro executável (o *payload*). Ao retomar a execução, o processo aparenta ser legítimo, mas está executando um binário totalmente diferente.
 
 Este projeto simula esse comportamento com base em amostras reais, usando técnicas como:
 
