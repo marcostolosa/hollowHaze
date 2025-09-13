@@ -1,8 +1,6 @@
-# Process Hollowing 2024 – Educational Demo Tool
+# hollowHaze 
 
 > ⚠️ **AVISO:** Esta ferramenta é estritamente para **uso educacional** em ambientes **controlados** e **monitorados**. O objetivo é demonstrar, para fins didáticos, como funciona a técnica de *Process Hollowing*, comum em ameaças reais, e como ela é detectada por ferramentas de defesa como AV/EDRs, YARA e Sysmon. **NÃO utilize em ambientes de produção ou conectados à internet.**
-
----
 
 ## Sobre
 
