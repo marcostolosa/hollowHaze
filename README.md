@@ -6,330 +6,220 @@
 
 ## Visão Geral
 
-Este projeto demonstra duas técnicas avançadas de evasão e injeção utilizadas por malware moderno:
+hollowHaze é um framework de demonstração técnica que implementa Process Hollowing com resolução de syscalls Hell's Gate para educação em cibersegurança e treinamento de red teams. O framework fornece implementação abrangente de técnicas avançadas de evasão utilizadas em análise de malware moderno.
 
-- **Hell's Gate**: Técnica de evasão que resolve syscalls diretamente para evitar hooks de EDR/AV
-- **Process Hollowing**: Técnica de injeção que substitui o código de um processo legítimo por payload malicioso
+**Propósito**: Demonstração educacional de técnicas de injeção de processos para profissionais de segurança, analistas de malware e pentesters.
 
-⚠️ **AVISO IMPORTANTE**: Este código é exclusivamente para fins educacionais em ambiente controlado e autorizado!
+**Aviso**: Este software é destinado exclusivamente para pesquisa de segurança autorizada e ambientes educacionais.
 
-## Objetivos Educacionais
+## Arquitetura Técnica
 
-### Para Pentesters Iniciantes
-- Compreender técnicas avançadas de evasão
-- Entender como malware evita detecção
-- Aprender contramedidas e métodos de detecção
-- Praticar análise de técnicas ofensivas
+### Componentes Principais
 
-### Para Red Teams
-- Demonstrar bypasses de EDR/AV
-- Técnicas de living-off-the-land
-- Lateral movement através de processos legítimos
+**Implementação Hell's Gate**
+- Resolução direta de syscalls do NTDLL
+- Mecanismos de detecção e bypass de hooks
+- Cálculo dinâmico de hash de funções (DJB2)
+- Extração de números de syscall dos opcodes
 
-## Arquitetura do Projeto
+**Engine de Process Hollowing**
+- Criação de processos suspensos
+- Análise e manipulação de cabeçalhos PE
+- Desmapeamento de memória via NtUnmapViewOfSection
+- Injeção de payload e modificação de contexto
+
+## Estrutura do Repositório
 
 ```
-ProcessHollowingDemo/
-├── src/
-│   ├── main.cpp              # Código principal da demonstração
-│   ├── hellsgate.h          # Definições Hell's Gate
-│   └── process_hollowing.h  # Estruturas Process Hollowing
-├── docs/
-│   ├── README.md            # Este arquivo
-│   ├── TECHNIQUES.md        # Explicação detalhada das técnicas
-│   └── DETECTION.md         # Métodos de detecção e contramedidas
-├── examples/
-│   ├── payloads/            # Payloads de exemplo para demonstração
-│   └── targets/             # Processos target recomendados
-└── tools/
-    ├── build.bat            # Script de compilação
-    └── setup.py             # Setup do ambiente de demo
+hollowHaze/
+├── demo.c          # Implementação principal (600+ linhas)
+└── README.md       # Documentação
 ```
 
-## Quick Start
+## Instruções de Compilação
 
 ### Pré-requisitos
+- Ambiente de desenvolvimento Windows 10/11 x64
+- GCC (MinGW-w64) ou Microsoft Visual Studio
+- Privilégios de administrador para demonstração completa
 
-- **Sistema Operacional**: Windows 10/11 x64
-- **Compilador**: Visual Studio 2019+ ou MinGW-w64
-- **Permissões**: Administrador (para demonstração completa)
-- **Ambiente**: Sistema isolado/VM recomendado
+### Compilação
 
-### Instalação
+**Usando GCC/MinGW:**
+```bash
+gcc -o hollowHaze.exe demo.c -lkernel32 -lntdll -luser32
+```
+
+**Usando Visual Studio:**
+```bash
+cl demo.c /Fe:hollowHaze.exe kernel32.lib ntdll.lib user32.lib
+```
+
+### Execução
 
 ```bash
-# Clone o repositório
-git clone https://github.com/seu-usuario/process-hollowing-demo.git
-cd process-hollowing-demo
+# Demonstração padrão
+.\hollowHaze.exe
 
-# Configure o ambiente
-python setup.py --configure
-
-# Compile o projeto
-.\tools\build.bat
+# Modo debug com análise detalhada
+.\hollowHaze.exe --debug
 ```
 
-### Execução Básica
-
-```bash
-# Executar demonstração completa
-.\ProcessHollowingDemo.exe
-
-# Executar apenas Hell's Gate
-.\ProcessHollowingDemo.exe --hellsgate-only
-
-# Modo verboso para análise detalhada  
-.\ProcessHollowingDemo.exe --verbose --debug
-```
-
-## Análise das Técnicas
-
-### Hell's Gate Technique
-
-**Conceito**: Resolução direta de syscalls para evitar hooks de EDR/AV
-
-**Como Funciona**:
-1. Mapeia NTDLL.DLL na memória
-2. Localiza funções NTAPI específicas
-3. Extrai números de syscall dos opcodes
-4. Executa syscalls diretamente via assembly
-
-**Código Exemplo**:
-```cpp
-// Buscar syscall não-hooked
-DWORD syscallNum = FindSyscallNumber("NtCreateProcess");
-if (syscallNum != -1) {
-    // Executar syscall direto
-    ExecuteDirectSyscall(syscallNum, params);
-}
-```
-
-**Indicadores de Detecção**:
-- Acesso direto a NTDLL sem usar APIs
-- Padrões específicos de assembly para syscalls
-- Comportamento anômalo em hooks de APIs
-
-### Process Hollowing
-
-**Conceito**: Substituição de código de processo legítimo por payload malicioso
-
-**Fluxo de Execução**:
-```
-1. CreateProcess(SUSPENDED) → Processo legítimo suspenso
-2. NtUnmapViewOfSection()   → Remove imagem original  
-3. VirtualAllocEx()         → Aloca espaço para payload
-4. WriteProcessMemory()     → Escreve payload malicioso
-5. SetThreadContext()       → Ajusta entry point
-6. ResumeThread()           → Executa payload no processo legítimo
-```
-
-**Vantagens Ofensivas**:
-- Processo aparenta ser legítimo no Task Manager
-- Herda contexto de segurança do processo original
-- Dificulta análise forense
-- Evita detecção baseada em nome/path
-
-## Detecção e Contramedidas
-
-### Sinais de Process Hollowing
-
-**Indicadores Comportamentais**:
-- Processos com imagens desmapeadas
-- Memória executável em regiões inesperadas  
-- Discrepâncias entre imagem em disco vs memória
-- Threads com contexts modificados após criação
-
-**Ferramentas de Detecção**:
-- **ProcessHacker**: Verificar seções de memória
-- **Hollows Hunter**: Detector específico para hollowing
-- **Sysmon**: Event ID 25 (Process Tampering)
-- **WinAPIOverride**: Monitor de chamadas de API
-
-### Contramedidas Recomendadas
-
-#### Para Blue Teams
-```powershell
-# Monitor Sysmon para eventos suspeitos
-Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational"; ID=25}
-
-# Verificar processos com memória anômala
-Get-Process | Where-Object {$_.PagedMemorySize -gt $_.VirtualMemorySize}
-```
-
-#### Para EDR/AV Vendors
-- Implementar hooks resistentes a bypasses
-- Monitorar syscalls diretos
-- Análise heurística de comportamento
-- Sandboxing com análise de integridade
-
-## Demonstração Prática
-
-### Cenário 1: Demonstração Básica
-```bash
-# Target: notepad.exe
-# Payload: MessageBox demo
-# Objetivo: Mostrar conceitos fundamentais
-.\ProcessHollowingDemo.exe --target notepad.exe --demo-payload
-```
-
-### Cenário 2: Evasão Avançada
-```bash  
-# Target: processo sistema
-# Hell's Gate ativo
-# Análise de detecção
-.\ProcessHollowingDemo.exe --advanced --evasion --analysis
-```
+## Detalhes da Implementação
 
-### Cenário 3: Blue Team Defense
-```bash
-# Modo detecção
-# Gerar logs para análise
-# Demonstrar contramedidas
-.\ProcessHollowingDemo.exe --blue-team --generate-logs
-```
-
-## 🔧 Customização
-
-### Adicionando Novos Payloads
-
-```cpp
-// Em payloads/custom_payload.h
-class CustomPayload : public BasePayload {
-public:
-    BOOL GeneratePayload(LPVOID* buffer, SIZE_T* size) override {
-        // Sua implementação aqui
-        return TRUE;
-    }
-};
-```
-
-### Novos Targets
-
-```cpp
-// Em targets/custom_target.h  
-static const LPCWSTR CUSTOM_TARGETS[] = {
-    L"C:\\Windows\\System32\\your_target.exe",
-    L"C:\\Program Files\\Application\\app.exe"
-};
-```
+### Técnica Hell's Gate
 
-## Recursos de Aprendizado
-
-### Artigos Técnicos Fundamentais
+A implementação Hell's Gate realiza resolução direta de syscalls para contornar hooks de EDR/AV:
 
-1. **Process Hollowing Original**
-   - [Endgame Research](https://www.endgame.com/blog/technical-blog/ten-process-injection-techniques-technical-survey-common-and-trending-process)
-   - Técnica clássica explicada pelos criadores
+1. **Análise NTDLL**: Mapeia NTDLL.DLL e localiza funções alvo
+2. **Inspeção de Opcodes**: Examina prólogos de função para padrões de syscall
+3. **Detecção de Hooks**: Identifica funções modificadas/com hooks
+4. **Resolução Direta**: Extrai números de syscall de funções não-hookadas
 
-2. **Hell's Gate Research**  
-   - [GitHub - am0nsec/HellsGate](https://github.com/am0nsec/HellsGate)
-   - Implementação original com explicação detalhada
+**Funções Principais:**
+- `find_syscall_number()` - Localiza números de syscall via análise de opcodes
+- `djb2_hash()` - Gera hashes de nomes de função
+- `init_hellsgate()` - Inicializa framework de resolução de syscalls
 
-3. **MITRE ATT&CK Framework**
-   - [T1055.012 - Process Hollowing](https://attack.mitre.org/techniques/T1055/012/)
-   - Documentação oficial da técnica
+### Implementação Process Hollowing
 
-### Ferramentas Relacionadas
+O framework implementa o fluxo completo de process hollowing:
 
-4. **Hollow Hunter**
-   - [GitHub - hasherezade/hollows_hunter](https://github.com/hasherezade/hollows_hunter)
-   - Ferramenta de detecção de process hollowing
+**Fase 1: Criação de Processo**
+- Cria processo alvo em estado suspenso usando CREATE_SUSPENDED
+- Obtém contexto inicial da thread e informações do processo
 
-5. **Pe-sieve**  
-   - [GitHub - hasherezade/pe-sieve](https://github.com/hasherezade/pe-sieve)
-   - Scanner de anomalias em processos
+**Fase 2: Análise PE**
+- Lê cabeçalhos DOS e NT da memória do processo alvo
+- Extrai base da imagem, ponto de entrada e informações de seção
 
-6. **SysWhispers**
-   - [GitHub - jthuraisamy/SysWhispers](https://github.com/jthuraisamy/SysWhispers)  
-   - Geração automática de syscalls
+**Fase 3: Desmapeamento de Imagem**
+- Usa NtUnmapViewOfSection para desmapear imagem executável original
+- Trata falhas de desmapeamento graciosamente com mecanismos de fallback
 
-### Cursos e Treinamentos
+**Fase 4: Alocação de Memória**
+- Aloca região de memória executável no processo alvo
+- Preferencialmente usa endereço base da imagem original
 
-7. **Malware Development Essentials**
-   - [Sektor7.net](https://institute.sektor7.net/)
-   - Curso prático de desenvolvimento de malware
+**Fase 5: Injeção de Payload**
+- Escreve payload customizado na região de memória alocada
+- Implementa tratamento adequado de erros e procedimentos de limpeza
 
-8. **Advanced Windows Exploitation**
-   - [SANS FOR610](https://www.sans.org/cyber-security-courses/reverse-engineering-malware-malware-analysis-tools-techniques/)
-   - Análise reversa e técnicas avançadas
+**Fase 6: Modificação de Contexto**
+- Modifica contexto da thread para apontar para payload injetado
+- Atualiza ponteiro de instrução para novo ponto de entrada
 
-9. **Red Team Operations**  
-   - [SANS FOR564](https://www.sans.org/cyber-security-courses/red-team-penetration-testing/)
-   - Operações ofensivas avançadas
+**Fase 7: Retomada de Execução**
+- Retoma thread suspensa para executar processo hollowed
+- Mantém legitimidade do processo da perspectiva externa
 
-## Performance e Otimizações
+## Detecção e Análise
 
-### Métricas de Performance
+### Indicadores Comportamentais
 
-| Técnica | Tempo Médio | Taxa de Sucesso | Detecção EDR |
-|---------|-------------|-----------------|--------------|
-| Hell's Gate | ~50ms | 95% | Baixa |
-| Process Hollowing | ~200ms | 90% | Média |
-| Combinado | ~250ms | 85% | Baixa |
+**Anomalias de Processo:**
+- Processos com imagens primárias desmapeadas
+- Regiões de memória executável em endereços não-padrão
+- Discrepâncias entre imagem em disco e layout de memória
+- Criação de processo suspenso seguida de modificação de contexto
 
-### Otimizações Implementadas
+**Padrões de Chamadas de API:**
+- Uso direto de syscalls contornando APIs padrão
+- Chamadas NtUnmapViewOfSection em processos recém-criados
+- Operações WriteProcessMemory visando pontos de entrada de processo
+- Modificações SetThreadContext em processos suspensos
 
-- **Cache de Syscalls**: Evita re-parsing do NTDLL
-- **Pool de Processos**: Reutilização de processos target
-- **Async Operations**: Operações não-bloqueantes
-- **Memory Alignment**: Otimização para performance
+### Ferramentas de Detecção
 
-## Troubleshooting
+**Análise de Memória:**
+- Hollows Hunter: https://github.com/hasherezade/hollows_hunter
+- Pe-sieve: https://github.com/hasherezade/pe-sieve
+- Process Hacker: https://processhacker.sourceforge.io/
 
-### Problemas Comuns
+**Monitoramento Comportamental:**
+- Configuração Sysmon para Event ID 25 (Process Tampering)
+- Monitoramento ETW (Event Tracing for Windows)
+- WinAPIOverride para interceptação de chamadas de API
 
-**Erro: "Falha ao criar processo suspenso"**
-```
-Causa: Permissões insuficientes ou target protegido
-Solução: Executar como administrador ou usar target diferente
-```
+**Análise Forense:**
+- Volatility Framework: https://www.volatilityfoundation.org/
+- Desenvolvimento de regras YARA para detecção de padrões
 
-**Erro: "Hell's Gate initialization failed"**  
-```
-Causa: NTDLL hooked ou versão incompatível
-Solução: Usar VM limpa ou implementar bypass adicional
-```
+## Mapeamento MITRE ATT&CK
 
-**Erro: "Payload injection failed"**
-```
-Causa: DEP/ASLR ativo ou incompatibilidade de arquitetura
-Solução: Verificar configurações de segurança do SO
-```
+**Técnica Primária:** T1055.012 - Process Injection: Process Hollowing
+**Táticas:** Defense Evasion, Privilege Escalation
 
-### Debug Mode
+**Técnicas Relacionadas:**
+- T1055.001: Dynamic-link Library Injection
+- T1055.002: Portable Executable Injection
+- T1055.003: Thread Execution Hijacking
 
-```bash
-# Ativar logs detalhados
-.\ProcessHollowingDemo.exe --debug --verbose --log-file demo.log
+**Fontes de Dados de Detecção:**
+- Process: OS API Execution
+- Process: Process Creation and Modification
+- File: File System Modifications
 
-# Análise de syscalls
-.\ProcessHollowingDemo.exe --trace-syscalls --output trace.txt
-```
+## Áreas de Pesquisa Avançada
 
-## Contribuindo
+### Variantes Hell's Gate
+- Heaven's Gate: transições de syscall x64 para x86
+- Halos Gate: resolução indireta de syscalls
+- Tartarus Gate: ofuscação de cadeia de syscalls
 
-### Guidelines para Contribuição
+### Evolução de Injeção de Processo
+- Técnicas de Manual DLL Loading
+- Implementações de Module Stomping
+- Métodos de Thread Stack Spoofing
+- Variantes de Process Doppelgänging
 
-1. **Fork** o repositório
-2. **Crie** uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. **Commit** suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. **Push** para a branch (`git push origin feature/AmazingFeature`)
-5. **Abra** um Pull Request
+### Metodologias de Evasão
+- Estratégias de unhooking de NTDLL
+- Implementação assembly direta de syscalls
+- Evasão de hardware breakpoints
+- Bypasses de proteção de memória
 
-## Considerações Éticas e Legais
+## Referências de Pesquisa de Segurança
 
-### Uso Responsável
+**Pesquisa Original:**
+- Hell's Gate: https://github.com/am0nsec/HellsGate
+- SysWhispers: https://github.com/jthuraisamy/SysWhispers
+- Process Injection Survey: Publicações de Pesquisa Endgame
 
-Este projeto é destinado exclusivamente para:
-- Pesquisa acadêmica em segurança
-- Treinamento de equipes de segurança  
-- Desenvolvimento de contramedidas
-- Red team autorizado em pentest
+**Recursos Acadêmicos:**
+- MITRE ATT&CK Framework: https://attack.mitre.org/
+- Diretrizes NIST Cybersecurity Framework
+- Documentação Microsoft Security Development Lifecycle
 
-### Uso Proibido
+**Treinamento Profissional:**
+- Sektor7 Malware Development: https://institute.sektor7.net/
+- SANS FOR610 Reverse Engineering Malware
+- Offensive Security Advanced Windows Exploitation
 
-- Atividades maliciosas ou criminosas
-- Atacar sistemas sem autorização
-- Distribuição para fins maliciosos
-- Violação de leis locais/nacionais/internacionais
+## Diretrizes Legais e Éticas
+
+### Uso Autorizado
+- Pesquisa acadêmica de segurança dentro de estruturas institucionais
+- Engajamentos autorizados de teste de penetração
+- Exercícios de red team com escopo documentado e aprovação
+- Desenvolvimento e teste de capacidades defensivas
+
+### Requisitos de Conformidade
+- Documentar todas as atividades de teste e limitações de escopo
+- Manter contenção rigorosa dentro de ambientes autorizados
+- Respeitar leis e regulamentos aplicáveis em sua jurisdição
+- Aderir a códigos profissionais de conduta e políticas de divulgação
+
+## Suporte Técnico
+
+**Relatório de Problemas:** Submeta relatórios técnicos detalhados incluindo configuração do sistema, ambiente de compilação e saída de erro.
+
+**Colaboração em Pesquisa:** Contate mantenedores para colaboração acadêmica no desenvolvimento de técnicas avançadas de evasão.
+
+**Integração de Treinamento:** Framework disponível para integração em currículo de cibersegurança com licenciamento educacional adequado.
+
+---
+
+**Framework Educacional hollowHaze** - Plataforma de Pesquisa Avançada de Injeção de Processo
+
 *"Em segurança ofensiva, conhecer as técnicas do adversário é fundamental para construir defesas eficazes"*
