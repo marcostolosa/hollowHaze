@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-Educational-red.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue.svg)
-![Language](https://img.shields.io/badge/language-C%2B%2B-green.svg)
+![Language](https://img.shields.io/badge/language-C-green.svg)
 
 ## Visão Geral
 
